@@ -1723,38 +1723,40 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Back side styling */
 .back-side-heading {
-  font-size: var(--text-sm);  /* Reduced from text-base to fit more content */
+  font-size: var(--text-sm);  
   font-weight: 700;
   color: var(--accent-primary);
-  margin: 0 0 var(--space-xs) 0;  /* Reduced margin */
+  margin: 0 0 var(--space-xs) 0;  
   padding: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--space-xs);  /* Reduced padding */
-  flex-shrink: 0; /* Prevent heading from shrinking */
+  padding-bottom: var(--space-xs);  
+  flex-shrink: 0; 
 }
 
 .flip-card-back .experience-description {
   flex: 1;
   list-style: none;
   padding: 0;
-  margin: 0 0 var(--space-md) 0;  /* Optimized margin */
+  margin: 0 0 var(--space-md) 0;  
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);  /* Reduced gap for more content */
-  min-height: 0; /* Allow shrinking */
-  overflow: visible; /* Allow content to flow */
+  gap: var(--space-xs);  
+  min-height: 0; 
+  overflow: visible; 
 }
 
 .flip-card-back .experience-description li {
-  font-size: var(--text-xs);  /* Reduced to fit more content */
+  font-size: var(--text-xs);  
   color: var(--text-secondary);
   position: relative;
   padding-left: var(--space-md);
-  line-height: 1.4;  /* Optimized line height */
-  word-wrap: break-word; /* Handle long words */
-  hyphens: auto; /* Enable hyphenation for better text wrapping */
+  line-height: 1.4;  
+  word-wrap: break-word; 
+  hyphens: auto; 
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .flip-card-back .experience-description li::before {
@@ -2537,7 +2539,113 @@ body.light-theme .tryhackme-link:hover .tryhackme-logo {
   .nav-toggle {
     display: flex;
   }
-    .hero-content {
+  
+  /* Mobile Experience Cards Fix */
+  .experience-content.flip-card {
+    height: auto;
+    min-height: 200px;
+  }
+  
+  .flip-card-back {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+    overflow-y: auto;
+    max-height: 300px;
+  }
+  
+  .flip-card-back .experience-description li {
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    padding-left: var(--space-lg);
+    word-break: break-word;
+    white-space: normal;
+  }
+  
+  .flip-card-back .tech-tag {
+    font-size: var(--text-xs);
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+  
+  .back-side-heading {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-sm);
+  }
+  
+  /* Skills Section Mobile Fix */
+  .skills-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  
+  .skill-category {
+    padding: var(--space-lg);
+  }
+  
+  .skill-progress {
+    animation: fillProgress 2s ease-out forwards;
+    animation-delay: 0.3s;
+  }
+  
+  /* Ensure skill bars are visible on mobile */
+  .skill-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+  }
+  
+  .skill-progress {
+    height: 100%;
+    background: var(--accent-gradient);
+    width: 0%;
+    border-radius: var(--radius-full);
+    transition: width 1.5s ease-out;
+    position: relative;
+    transform-origin: left;
+  }
+  
+  /* Fallback for devices that don't support transforms */
+  .skill-progress.animated {
+    animation: progressFill 1.5s ease-out forwards;
+  }
+  
+  @keyframes progressFill {
+    from { 
+      width: 0%; 
+      transform: scaleX(0);
+    }
+    to { 
+      width: var(--progress-width, 0%); 
+      transform: scaleX(1);
+    }
+  }
+  
+  .skill-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  @keyframes fillProgress {
+    from { width: 0%; }
+    to { width: var(--progress-width, 0%); }
+  }
+    
+  .hero-content {
     grid-template-columns: 1fr;
     gap: var(--space-2xl);
     text-align: center;
@@ -2605,6 +2713,90 @@ body.light-theme .tryhackme-link:hover .tryhackme-logo {
   .tech-tag {
     font-size: var(--text-xs);
     padding: var(--space-xs) var(--space-sm);
+  }
+}
+
+/* Additional Mobile Fixes */
+@media (max-width: 480px) {
+  :root {
+    --container-padding: 1rem;
+    --section-padding-y: 2rem;
+  }
+  
+  .hero-name {
+    font-size: var(--text-4xl);
+  }
+  
+  .hero-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .hero-description {
+    font-size: var(--text-base);
+  }
+  
+  /* Ultra Mobile Experience Cards */
+  .experience-content.flip-card {
+    min-height: 160px;
+    height: auto;
+  }
+  
+  .flip-card-back {
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+    font-size: var(--text-xs);
+  }
+  
+  .flip-card-back .experience-description li {
+    font-size: 11px;
+    line-height: 1.4;
+    padding-left: var(--space-md);
+  }
+  
+  .flip-card-back .tech-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  
+  .back-side-heading {
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-xs);
+  }
+  
+  /* Ultra Mobile Skills */
+  .skill-category {
+    padding: var(--space-md);
+  }
+  
+  .skill-item {
+    margin-bottom: var(--space-sm);
+  }
+  
+  .skill-header {
+    margin-bottom: var(--space-xs);
+  }
+  
+  .skill-name {
+    font-size: var(--text-sm);
+  }
+  
+  .skill-percentage {
+    font-size: var(--text-sm);
+  }
+  
+  /* Ensure contact form is usable on small screens */
+  .contact-content {
+    gap: var(--space-xl);
+  }
+  
+  .contact-form {
+    padding: var(--space-lg);
+  }
+  
+  .form-input,
+  .form-textarea {
+    padding: var(--space-md);
+    font-size: var(--text-base);
   }
 }
 

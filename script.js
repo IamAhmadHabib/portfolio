@@ -209,50 +209,69 @@ class PortfolioApp {
     setupSkillAnimations() {
         const skillBars = document.querySelectorAll('.skill-progress');
         
+        // Set initial state for all skill bars
+        skillBars.forEach(bar => {
+            bar.style.transform = 'scaleX(0)';
+            bar.style.transformOrigin = 'left';
+            bar.style.transition = 'transform 1.5s ease-out';
+        });
+        
         const skillObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const skillProgress = entry.target;
                     const skillItem = skillProgress.closest('.skill-item');
+                    let targetWidth = 0;
+                    
+                    // Try multiple ways to get the percentage
                     const percentage = skillItem ? skillItem.querySelector('.skill-percentage') : null;
+                    const dataPercentage = skillProgress.getAttribute('data-percentage');
                     
                     if (percentage) {
-                        const targetWidth = parseInt(percentage.textContent) / 100;
+                        targetWidth = parseInt(percentage.textContent) / 100;
+                    } else if (dataPercentage) {
+                        targetWidth = parseInt(dataPercentage) / 100;
+                    } else {
+                        // Fallback: try to extract from any element with percentage
+                        const percentText = skillItem ? skillItem.textContent.match(/(\d+)%/) : null;
+                        if (percentText) {
+                            targetWidth = parseInt(percentText[1]) / 100;
+                        }
+                    }
+                    
+                    if (targetWidth > 0) {
+                        // Set CSS custom property for mobile animation
+                        skillProgress.style.setProperty('--progress-width', `${targetWidth * 100}%`);
                         
                         // Add animated class for glow effect
                         skillProgress.classList.add('animated');
                         
-                        // Animate with CSS transform for better performance
+                        // Animate with both transform and width for better compatibility
                         setTimeout(() => {
                             skillProgress.style.transform = `scaleX(${targetWidth})`;
-                        }, 200);
+                            skillProgress.style.width = `${targetWidth * 100}%`;
+                        }, 100);
                         
                         // Remove glow animation after completion
                         setTimeout(() => {
                             skillProgress.classList.remove('animated');
                         }, 2000);
-                    } else {
-                        // Fallback for data-percentage attribute
-                        const dataPercentage = skillProgress.getAttribute('data-percentage');
-                        if (dataPercentage) {
-                            const targetWidth = parseInt(dataPercentage) / 100;
-                            skillProgress.classList.add('animated');
-                            setTimeout(() => {
-                                skillProgress.style.transform = `scaleX(${targetWidth})`;
-                            }, 200);
-                            setTimeout(() => {
-                                skillProgress.classList.remove('animated');
-                            }, 2000);
-                        }
                     }
                     
                     skillObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.3, rootMargin: '0px 0px -50px 0px' });
+        }, {
+            threshold: 0.3,
+            rootMargin: '50px'
+        });
 
-        skillBars.forEach(bar => skillObserver.observe(bar));
-    }// Enhanced Interactive Image Effects with Cursor Proximity
+        skillBars.forEach(bar => {
+            skillObserver.observe(bar);
+        });
+    }
+
+    // Enhanced Interactive Image Effects with Cursor Proximity
     // Enhanced Profile Card Tilt Effects
     setupImageInteractions() {
         const profileCard = document.getElementById('profile-card');
