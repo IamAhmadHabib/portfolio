@@ -21,6 +21,7 @@ class PortfolioApp {
         this.setupThemeToggle();
         this.setupScrollToTop();
         this.setupContactForm();
+        this.setupDownloadButton();
         this.setupPerformanceOptimizations();
     }
 
@@ -355,7 +356,7 @@ class PortfolioApp {
         let floatAnimation;
         const startFloating = () => {
             let start = null;
-            floatAnimation = (timestamp) => {
+            const float = (timestamp) => {
                 if (!start) start = timestamp;
                 const elapsed = timestamp - start;
                 const progress = (elapsed % 4000) / 4000; // 4 second cycle
@@ -365,13 +366,16 @@ class PortfolioApp {
                     profileCard.style.transform = `translateY(${yOffset}px)`;
                 }
                 
-                requestAnimationFrame(floatAnimation);
+                floatAnimation = requestAnimationFrame(float);
             };
-            requestAnimationFrame(floatAnimation);
+            floatAnimation = requestAnimationFrame(float);
         };
 
         // Start floating animation after initial load animation
         setTimeout(startFloating, 3000);
+        
+        // Store animation ID for cleanup
+        this.profileFloatAnimation = floatAnimation;
     }
 
     // Optimized Particle System
@@ -411,6 +415,7 @@ class PortfolioApp {
 
         // Animate particles with optimized RAF
         let lastTime = 0;
+        let animationId;
         const animateParticles = (currentTime) => {
             if (currentTime - lastTime >= 16) { // ~60fps
                 particles.forEach(particle => {
@@ -428,19 +433,34 @@ class PortfolioApp {
                 lastTime = currentTime;
             }
             
-            requestAnimationFrame(animateParticles);
+            animationId = requestAnimationFrame(animateParticles);
         };
         
-        animateParticles(0);
+        animationId = requestAnimationFrame(animateParticles);
+        
+        // Store animation ID for cleanup
+        this.particleAnimationId = animationId;
 
         // Pause particles when tab is not visible
-        document.addEventListener('visibilitychange', () => {
+        const visibilityHandler = () => {
             if (document.hidden) {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
                 particles.forEach(p => p.element.style.animationPlayState = 'paused');
             } else {
                 particles.forEach(p => p.element.style.animationPlayState = 'running');
+                if (!animationId) {
+                    animationId = requestAnimationFrame(animateParticles);
+                }
             }
-        });
+        };
+        
+        document.addEventListener('visibilitychange', visibilityHandler);
+        
+        // Store handler for cleanup
+        this.particleVisibilityHandler = visibilityHandler;
     }    // Enhanced Theme Toggle
     setupThemeToggle() {
         const themeToggle = document.querySelector('.theme-toggle');
@@ -474,10 +494,22 @@ class PortfolioApp {
                 body.style.transition = '';
             }, 300);
             
-            // Visual feedback
-            themeToggle.style.transform = 'translateY(-50%) scale(0.9)';
+            // Visual feedback - check if transform is already set
+            const currentTransform = getComputedStyle(themeToggle).transform;
+            const hasTransform = currentTransform && currentTransform !== 'none';
+            
+            if (hasTransform) {
+                themeToggle.style.transform = currentTransform.replace(/scale\([^)]*\)/, 'scale(0.9)');
+            } else {
+                themeToggle.style.transform = 'scale(0.9)';
+            }
+            
             setTimeout(() => {
-                themeToggle.style.transform = 'translateY(-50%) scale(1)';
+                if (hasTransform) {
+                    themeToggle.style.transform = currentTransform.replace(/scale\([^)]*\)/, 'scale(1)');
+                } else {
+                    themeToggle.style.transform = 'scale(1)';
+                }
             }, 150);
         });
 
@@ -513,6 +545,101 @@ class PortfolioApp {
                 top: 0,
                 behavior: 'smooth'
             });
+        });
+    }
+
+    // Enhanced Download Button
+    setupDownloadButton() {
+        const downloadBtn = document.querySelector('.btn-outline[download]');
+        if (!downloadBtn) return;
+
+        // Add click animation and feedback
+        downloadBtn.addEventListener('click', (e) => {
+            // Create ripple effect
+            const ripple = document.createElement('div');
+            ripple.className = 'download-ripple';
+            
+            const rect = downloadBtn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: radial-gradient(circle, rgba(124, 58, 237, 0.6) 0%, transparent 70%);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: downloadRipple 0.6s ease-out;
+                pointer-events: none;
+                z-index: 1;
+            `;
+            
+            downloadBtn.appendChild(ripple);
+            
+            // Remove ripple after animation
+            setTimeout(() => {
+                if (ripple.parentNode) {
+                    ripple.remove();
+                }
+            }, 600);
+            
+            // Success notification
+            setTimeout(() => {
+                this.showNotification('Resume download started! 📄', 'success');
+            }, 300);
+            
+            // Add successful download animation to button
+            downloadBtn.style.transform = 'scale(0.95)';
+            downloadBtn.style.boxShadow = '0 0 50px rgba(124, 58, 237, 1)';
+            
+            setTimeout(() => {
+                downloadBtn.style.transform = '';
+                downloadBtn.style.boxShadow = '';
+            }, 200);
+        });
+
+        // Add hover sound effect (optional)
+        downloadBtn.addEventListener('mouseenter', () => {
+            // Add subtle vibration on mobile devices
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        });
+
+        // Add download progress animation
+        let downloadProgress = 0;
+        downloadBtn.addEventListener('click', () => {
+            const progressBar = document.createElement('div');
+            progressBar.className = 'download-progress';
+            progressBar.style.cssText = `
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                height: 3px;
+                background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
+                border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+                width: 0%;
+                transition: width 2s ease-out;
+                z-index: 2;
+            `;
+            
+            downloadBtn.appendChild(progressBar);
+            
+            // Animate progress
+            setTimeout(() => {
+                progressBar.style.width = '100%';
+            }, 100);
+            
+            // Remove progress bar
+            setTimeout(() => {
+                if (progressBar.parentNode) {
+                    progressBar.remove();
+                }
+            }, 2500);
         });
     }
 
@@ -596,11 +723,25 @@ class PortfolioApp {
 
         // Clean up on page unload
         window.addEventListener('beforeunload', () => {
+            // Clean up animation frames
             if (this.rafId) {
                 cancelAnimationFrame(this.rafId);
             }
+            if (this.particleAnimationId) {
+                cancelAnimationFrame(this.particleAnimationId);
+            }
+            if (this.profileFloatAnimation) {
+                cancelAnimationFrame(this.profileFloatAnimation);
+            }
+            
+            // Clean up observers
             if (this.intersectionObserver) {
                 this.intersectionObserver.disconnect();
+            }
+            
+            // Clean up event listeners
+            if (this.particleVisibilityHandler) {
+                document.removeEventListener('visibilitychange', this.particleVisibilityHandler);
             }
         });
     }
@@ -656,7 +797,10 @@ class PortfolioApp {
             notification.style.opacity = '0';
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => {
-                document.body.removeChild(notification);
+                // Check if notification still exists before removing
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
             }, 300);
         }, 3000);
     }
@@ -873,17 +1017,25 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         new PortfolioApp();
     } catch (error) {
-        // Silent error handling
+        console.warn('Portfolio app initialization failed:', error);
+        // Fallback for essential functionality
+        document.body.classList.add('fallback-mode');
     }
     
-    // Initialize filters with delay
+    // Initialize filters with delay (use only one method to avoid conflicts)
     setTimeout(() => {
         try {
-            initProjectFilters();
             new ProjectFilter();
         } catch (error) {
-            // Fallback - just try the simple function
-            setTimeout(initProjectFilters, 500);
+            console.warn('Project filter initialization failed, using fallback:', error);
+            // Fallback - use the simple function
+            setTimeout(() => {
+                try {
+                    initProjectFilters();
+                } catch (fallbackError) {
+                    console.warn('Filter fallback also failed:', fallbackError);
+                }
+            }, 500);
         }
     }, 500);
 });
@@ -1066,3 +1218,72 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError)
     // Clear the error
     chrome.runtime.lastError;
 }
+
+// Add a simple fallback script at the end to ensure basic functionality
+// This will run even if the main PortfolioApp fails
+(function() {
+    'use strict';
+    
+    // Ensure DOM is ready
+    function domReady() {
+        // Hide loading screen if it's still visible after 5 seconds
+        setTimeout(() => {
+            const loadingScreen = document.querySelector('.loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                loadingScreen.style.display = 'none';
+                console.warn('Loading screen manually hidden due to timeout');
+            }
+        }, 5000);
+        
+        // Basic navigation fallback
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            if (!link.onclick) { // Only add if no click handler exists
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Basic mobile menu fallback
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        if (navToggle && navMenu && !navToggle.onclick) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            });
+        }
+        
+        // Basic scroll to top fallback
+        const scrollToTop = document.querySelector('.scroll-to-top');
+        if (scrollToTop && !scrollToTop.onclick) {
+            scrollToTop.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            // Show/hide based on scroll
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    scrollToTop.classList.add('visible');
+                } else {
+                    scrollToTop.classList.remove('visible');
+                }
+            });
+        }
+    }
+    
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', domReady);
+    } else {
+        domReady();
+    }
+})();
